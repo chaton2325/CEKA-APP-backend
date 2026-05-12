@@ -271,6 +271,81 @@ Erreurs possibles:
 - `401`: `invalid_token`
 - `401`: `user_not_found`
 
+## Supprimer Son Compte
+
+Cette route supprime immediatement le compte connecte et ses contenus lies.
+Le mot de passe actuel est requis.
+
+```http
+DELETE /auth/me
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "current_password": "password123"
+}
+```
+
+Reponse `200`:
+
+```json
+{
+  "message": "account_deleted"
+}
+```
+
+Erreurs possibles:
+
+- `400`: `current_password_required`
+- `401`: `missing_bearer_token`
+- `401`: `invalid_token`
+- `401`: `invalid_current_password`
+
+## Demander La Suppression De Ses Donnees
+
+Cette route cree une demande `pending` pour traitement manuel ou administratif.
+Elle ne supprime pas le compte immediatement.
+
+```http
+POST /auth/me/data-deletion-request
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "reason": "Je souhaite supprimer mes donnees"
+}
+```
+
+Reponse `201`:
+
+```json
+{
+  "data_deletion_request": {
+    "id": 1,
+    "requester_user_id": 1,
+    "requester_username": "alice",
+    "requester_email": "alice@example.com",
+    "reason": "Je souhaite supprimer mes donnees",
+    "status": "pending",
+    "created_at": "2026-05-12T10:00:00",
+    "updated_at": "2026-05-12T10:00:00"
+  }
+}
+```
+
+Erreurs possibles:
+
+- `401`: `missing_bearer_token`
+- `401`: `invalid_token`
+
 ## Consulter Un Profil Public
 
 Par ID:

@@ -8,7 +8,9 @@ from services.auth_service import (
     authenticate_user,
     change_user_password,
     create_password_reset_code,
+    delete_user_account,
     register_user,
+    request_data_deletion,
     reset_password_with_code,
     update_user_profile,
 )
@@ -134,6 +136,51 @@ def change_password():
 @jwt_required
 def me():
     return jsonify({"user": g.current_user.to_dict()})
+
+
+def serialize_data_deletion_request(deletion_request) -> dict:
+    return {
+        "id": deletion_request.id,
+        "requester_user_id": deletion_request.requester_user_id,
+        "requester_username": deletion_request.requester_username,
+        "requester_email": deletion_request.requester_email,
+        "reason": deletion_request.reason,
+        "status": deletion_request.status,
+        "created_at": (
+            deletion_request.created_at.isoformat()
+            if deletion_request.created_at
+            else None
+        ),
+        "updated_at": (
+            deletion_request.updated_at.isoformat()
+            if deletion_request.updated_at
+            else None
+        ),
+    }
+
+
+@auth_bp.delete("/auth/me")
+@jwt_required
+def delete_me():
+    data = request.get_json(silent=True) or {}
+    current_password = data.get("current_password") or ""
+
+    if not current_password:
+        return jsonify({"error": "current_password_required"}), 400
+
+    if not delete_user_account(g.db, g.current_user, current_password):
+        return jsonify({"error": "invalid_current_password"}), 401
+
+    return jsonify({"message": "account_deleted"})
+
+
+@auth_bp.post("/auth/me/data-deletion-request")
+@jwt_required
+def request_my_data_deletion():
+    data = request.get_json(silent=True) or {}
+    reason = (data.get("reason") or "").strip() or None
+    deletion_request = request_data_deletion(g.db, g.current_user, reason=reason)
+    return jsonify({"data_deletion_request": serialize_data_deletion_request(deletion_request)}), 201
 
 
 @auth_bp.get("/users/search")

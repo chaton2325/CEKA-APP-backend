@@ -6,7 +6,11 @@ from sqlalchemy.orm import Session
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from config import Config
+from models.comment import Comment
+from models.data_deletion_request import DataDeletionRequest
+from models.notification import Notification
 from models.password_reset_code import PasswordResetCode
+from models.post import Post
 from models.user import User
 
 
@@ -117,3 +121,55 @@ def update_user_profile(
     db.commit()
     db.refresh(user)
     return user
+
+
+def request_data_deletion(
+    db: Session, user: User, reason: str | None = None
+) -> DataDeletionRequest:
+    deletion_request = DataDeletionRequest(
+        requester_user_id=user.id,
+        requester_username=user.username,
+        requester_email=user.email,
+        reason=reason,
+    )
+    db.add(deletion_request)
+    db.commit()
+    db.refresh(deletion_request)
+    return deletion_request
+
+
+def delete_user_account(db: Session, user: User, current_password: str) -> bool:
+    if not check_password_hash(user.password_hash, current_password):
+        return False
+
+    post_ids = list(db.scalars(select(Post.id).where(Post.author_id == user.id)))
+    comment_ids = list(
+        db.scalars(
+            select(Comment.id).where(
+                or_(Comment.author_id == user.id, Comment.post_id.in_(post_ids))
+            )
+        )
+    )
+
+    notification_filters = [
+        Notification.actor_id == user.id,
+        Notification.recipient_id == user.id,
+    ]
+    if post_ids:
+        notification_filters.append(Notification.post_id.in_(post_ids))
+    if comment_ids:
+        notification_filters.append(Notification.comment_id.in_(comment_ids))
+
+    for notification in list(
+        db.scalars(select(Notification).where(or_(*notification_filters)))
+    ):
+        db.delete(notification)
+
+    for reset_code in list(
+        db.scalars(select(PasswordResetCode).where(PasswordResetCode.user_id == user.id))
+    ):
+        db.delete(reset_code)
+
+    db.delete(user)
+    db.commit()
+    return True

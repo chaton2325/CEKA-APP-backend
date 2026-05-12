@@ -99,6 +99,34 @@ Authorization: Bearer <access_token>
 GET /auth/me
 ```
 
+### Supprimer son compte
+
+La suppression immediate demande le mot de passe actuel.
+
+```http
+DELETE /auth/me
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+  "current_password": "password123"
+}
+```
+
+### Demander la suppression de ses donnees
+
+Cette route cree une demande `pending` a traiter cote administration/support.
+
+```http
+POST /auth/me/data-deletion-request
+Authorization: Bearer <access_token>
+Content-Type: application/json
+
+{
+  "reason": "Je souhaite supprimer mes donnees"
+}
+```
+
 ### Modifier profil, photo et banniere
 
 Envoyer en `multipart/form-data`:
