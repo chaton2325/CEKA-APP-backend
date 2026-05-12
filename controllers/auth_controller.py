@@ -14,6 +14,7 @@ from services.auth_service import (
 )
 from services.email_service import EmailConfigurationError, send_password_reset_code
 from services.file_service import save_image
+from services.user_service import search_profiles
 from utils.auth import jwt_required
 from utils.jwt import create_access_token
 
@@ -133,6 +134,28 @@ def change_password():
 @jwt_required
 def me():
     return jsonify({"user": g.current_user.to_dict()})
+
+
+@auth_bp.get("/users/search")
+def search_user_profiles():
+    query = (request.args.get("q") or "").strip()
+    try:
+        limit = min(max(int(request.args.get("limit", 10)), 1), 50)
+    except ValueError:
+        return jsonify({"error": "invalid_limit"}), 400
+
+    if not query:
+        return jsonify({"error": "query_required"}), 400
+
+    db = SessionLocal()
+    try:
+        results = [
+            {"user": user.to_public_dict(), "score": round(score, 3)}
+            for user, score in search_profiles(db, query, limit=limit)
+        ]
+        return jsonify({"results": results})
+    finally:
+        db.close()
 
 
 @auth_bp.get("/users/<int:user_id>")

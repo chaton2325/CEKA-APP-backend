@@ -3,16 +3,20 @@ from flask import Blueprint, g, jsonify, request
 from database.session import SessionLocal
 from models.comment import Comment
 from models.post import Post
+from models.user import User
 from services.file_service import save_post_media
 from services.post_service import (
     create_comment,
     create_post,
+    delete_post,
     get_post,
     like_comment,
     like_post,
+    list_user_posts,
     list_posts,
     unlike_comment,
     unlike_post,
+    update_post,
 )
 from config import Config
 from utils.auth import jwt_required
@@ -69,6 +73,12 @@ def serialize_post(post: Post) -> dict:
     }
 
 
+def parse_bool(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 @post_bp.post("/posts")
 @jwt_required
 def publish_post():
@@ -112,6 +122,64 @@ def get_one_post(post_id: int):
         return jsonify({"post": serialize_post(post)})
     finally:
         db.close()
+
+
+@post_bp.get("/users/<int:user_id>/posts")
+def get_user_posts(user_id: int):
+    db = SessionLocal()
+    try:
+        if not db.get(User, user_id):
+            return jsonify({"error": "user_not_found"}), 404
+        return jsonify({"posts": [serialize_post(post) for post in list_user_posts(db, user_id)]})
+    finally:
+        db.close()
+
+
+@post_bp.put("/posts/<int:post_id>")
+@post_bp.patch("/posts/<int:post_id>")
+@jwt_required
+def edit_post(post_id: int):
+    post = get_post(g.db, post_id)
+    if not post:
+        return jsonify({"error": "post_not_found"}), 404
+    if post.author_id != g.current_user.id:
+        return jsonify({"error": "forbidden"}), 403
+
+    data = request.form if request.form else request.get_json(silent=True) or {}
+    content = (data.get("content") or "").strip() if "content" in data else None
+    replace_media = parse_bool(data.get("replace_media"))
+
+    try:
+        media_files = save_post_media(
+            request.files.getlist("media"),
+            Config.UPLOAD_DIRECTORIES["posts"],
+        )
+        updated_post = update_post(
+            g.db,
+            g.current_user,
+            post_id,
+            content=content,
+            media_files=media_files,
+            replace_media=replace_media,
+        )
+        return jsonify({"post": serialize_post(updated_post)})
+    except ValueError as exc:
+        g.db.rollback()
+        return jsonify({"error": str(exc)}), 400
+
+
+@post_bp.delete("/posts/<int:post_id>")
+@jwt_required
+def remove_post(post_id: int):
+    try:
+        delete_post(g.db, g.current_user, post_id)
+        return jsonify({"message": "post_deleted"})
+    except PermissionError as exc:
+        g.db.rollback()
+        return jsonify({"error": str(exc)}), 403
+    except ValueError as exc:
+        g.db.rollback()
+        return jsonify({"error": str(exc)}), 404
 
 
 @post_bp.post("/posts/<int:post_id>/comments")

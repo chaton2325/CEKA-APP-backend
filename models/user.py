@@ -33,6 +33,12 @@ class User(Base):
     comment_likes = relationship(
         "CommentLike", back_populates="user", cascade="all, delete-orphan"
     )
+    notifications = relationship(
+        "Notification",
+        foreign_keys="Notification.recipient_id",
+        back_populates="recipient",
+        cascade="all, delete-orphan",
+    )
 
     def to_dict(self) -> dict:
         return {

@@ -534,6 +534,86 @@ Erreurs possibles:
 
 - `404`: `post_not_found`
 
+## Voir Les Posts D'un Profil
+
+```http
+GET /users/<user_id>/posts
+```
+
+Reponse `200`:
+
+```json
+{
+  "posts": []
+}
+```
+
+La structure de chaque post est la meme que `GET /posts`.
+
+Erreurs possibles:
+
+- `404`: `user_not_found`
+
+## Modifier Un Post
+
+Seul l'auteur du post peut le modifier.
+
+```http
+PUT /posts/<post_id>
+PATCH /posts/<post_id>
+Authorization: Bearer <access_token>
+Content-Type: multipart/form-data
+```
+
+Champs:
+
+- `content`: nouveau texte
+- `media`: fichiers image/audio/video a ajouter
+- `replace_media`: `true` pour remplacer tous les medias existants
+
+Pour modifier uniquement le texte, `application/json` est accepte:
+
+```json
+{
+  "content": "Texte modifie"
+}
+```
+
+Reponse `200`: meme format que `GET /posts/<post_id>`.
+
+Erreurs possibles:
+
+- `400`: `content_or_media_required`
+- `400`: `invalid_media_type`
+- `401`: `missing_bearer_token`
+- `401`: `invalid_token`
+- `403`: `forbidden`
+- `404`: `post_not_found`
+
+## Supprimer Un Post
+
+Seul l'auteur du post peut le supprimer.
+
+```http
+DELETE /posts/<post_id>
+Authorization: Bearer <access_token>
+```
+
+Reponse `200`:
+
+```json
+{
+  "message": "post_deleted"
+}
+```
+
+Erreurs possibles:
+
+- `401`: `missing_bearer_token`
+- `401`: `invalid_token`
+- `403`: `forbidden`
+- `404`: `post_not_found`
+
 ## Liker Un Post
 
 ```http
@@ -688,6 +768,125 @@ Erreurs possibles:
 - `401`: `missing_bearer_token`
 - `401`: `invalid_token`
 - `404`: `comment_not_found`
+
+## Notifications
+
+Les notifications sont creees quand un autre utilisateur commente, repond a un
+commentaire, like un post ou like un commentaire.
+
+Types possibles:
+
+- `post_comment`
+- `comment_reply`
+- `post_like`
+- `comment_like`
+
+### Lister Les Notifications
+
+```http
+GET /notifications
+GET /notifications?unread_only=true
+Authorization: Bearer <access_token>
+```
+
+Reponse `200`:
+
+```json
+{
+  "notifications": [
+    {
+      "id": 1,
+      "type": "post_comment",
+      "actor": {
+        "id": 2,
+        "username": "bob",
+        "profile_photo_url": null
+      },
+      "post_id": 1,
+      "comment_id": 3,
+      "is_read": false,
+      "created_at": "2026-05-12T10:10:00"
+    }
+  ],
+  "unread_count": 1
+}
+```
+
+### Marquer Une Notification Comme Lue
+
+```http
+PUT /notifications/<notification_id>/read
+Authorization: Bearer <access_token>
+```
+
+Reponse `200`:
+
+```json
+{
+  "notification": {
+    "id": 1,
+    "type": "post_comment",
+    "actor": {
+      "id": 2,
+      "username": "bob",
+      "profile_photo_url": null
+    },
+    "post_id": 1,
+    "comment_id": 3,
+    "is_read": true,
+    "created_at": "2026-05-12T10:10:00"
+  }
+}
+```
+
+### Tout Marquer Comme Lu
+
+```http
+PUT /notifications/read-all
+Authorization: Bearer <access_token>
+```
+
+Reponse `200`:
+
+```json
+{
+  "updated_count": 3
+}
+```
+
+## Recherche De Profils
+
+La recherche est tolerante aux fautes simples, accents et casse.
+
+```http
+GET /users/search?q=alce&limit=10
+```
+
+Reponse `200`:
+
+```json
+{
+  "results": [
+    {
+      "user": {
+        "id": 1,
+        "username": "alice",
+        "bio": "Ma bio",
+        "profile_photo_url": null,
+        "banner_photo_url": null,
+        "created_at": "2026-05-12T10:00:00",
+        "updated_at": "2026-05-12T10:00:00"
+      },
+      "score": 0.8
+    }
+  ]
+}
+```
+
+Erreurs possibles:
+
+- `400`: `query_required`
+- `400`: `invalid_limit`
 
 ## Afficher Une Image Uploadee
 

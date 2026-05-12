@@ -156,6 +156,27 @@ Chaque post renvoie:
 - `liked_by`: utilisateurs ayant like
 - `comments`: commentaires racine avec auteur, likes et reponses
 
+### Voir les publications d'un profil
+
+```http
+GET /users/<user_id>/posts
+```
+
+### Modifier / supprimer une publication
+
+Seul l'auteur du post peut modifier ou supprimer.
+
+```http
+PUT /posts/<post_id>
+PATCH /posts/<post_id>
+DELETE /posts/<post_id>
+Authorization: Bearer <access_token>
+```
+
+En modification, envoyer `content` en JSON ou `multipart/form-data`. Pour ajouter des
+medias, envoyer `media`. Pour remplacer tous les medias existants, envoyer
+`replace_media=true`.
+
 ### Liker / unliker une publication
 
 ```http
@@ -191,4 +212,25 @@ Pour repondre a un commentaire, envoyer `parent_id`:
 POST /comments/<comment_id>/likes
 DELETE /comments/<comment_id>/likes
 Authorization: Bearer <access_token>
+```
+
+## Notifications
+
+Les notifications sont creees quand un autre utilisateur commente, repond, like un
+post ou like un commentaire.
+
+```http
+GET /notifications
+GET /notifications?unread_only=true
+PUT /notifications/<notification_id>/read
+PUT /notifications/read-all
+Authorization: Bearer <access_token>
+```
+
+## Recherche de profils
+
+Recherche tolerante aux fautes simples sur le nom d'utilisateur et la bio.
+
+```http
+GET /users/search?q=alice&limit=10
 ```
