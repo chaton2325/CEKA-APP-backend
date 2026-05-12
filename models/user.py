@@ -39,3 +39,14 @@ class User(Base):
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+    def to_public_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "username": self.username,
+            "bio": self.bio,
+            "profile_photo_url": self.profile_photo_url,
+            "banner_photo_url": self.banner_photo_url,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
+        }
