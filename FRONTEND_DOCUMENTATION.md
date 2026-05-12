@@ -381,7 +381,55 @@ Reponse `200`:
         "username": "alice",
         "profile_photo_url": null
       },
-      "comments": [],
+      "media": [
+        {
+          "id": 1,
+          "url": "/uploads/posts/photo.jpg",
+          "media_type": "image",
+          "filename": "photo.jpg",
+          "position": 0
+        },
+        {
+          "id": 2,
+          "url": "/uploads/posts/video.mp4",
+          "media_type": "video",
+          "filename": "video.mp4",
+          "position": 1
+        },
+        {
+          "id": 3,
+          "url": "/uploads/posts/audio.mp3",
+          "media_type": "audio",
+          "filename": "audio.mp3",
+          "position": 2
+        }
+      ],
+      "likes_count": 1,
+      "liked_by": [
+        {
+          "id": 2,
+          "username": "bob",
+          "profile_photo_url": null
+        }
+      ],
+      "comments": [
+        {
+          "id": 1,
+          "content": "Mon commentaire",
+          "author": {
+            "id": 2,
+            "username": "bob",
+            "profile_photo_url": null
+          },
+          "post_id": 1,
+          "parent_id": null,
+          "likes_count": 0,
+          "liked_by": [],
+          "replies": [],
+          "created_at": "2026-05-12T10:02:00",
+          "updated_at": "2026-05-12T10:02:00"
+        }
+      ],
       "created_at": "2026-05-12T10:00:00",
       "updated_at": "2026-05-12T10:00:00"
     }
@@ -394,10 +442,30 @@ Reponse `200`:
 ```http
 POST /posts
 Authorization: Bearer <access_token>
-Content-Type: application/json
+Content-Type: multipart/form-data
 ```
 
-Body:
+Champs `multipart/form-data`:
+
+- `content`: texte optionnel si au moins un media est envoye
+- `media`: fichier image/audio/video, champ repetable pour plusieurs fichiers
+
+Formats acceptes:
+
+- Image: `jpg`, `jpeg`, `png`, `webp`
+- Video: `mp4`, `mov`, `webm`, `mkv`
+- Audio: `mp3`, `wav`, `ogg`, `m4a`, `aac`
+
+Exemple:
+
+```txt
+content: Ma publication avec plusieurs medias
+media: photo.jpg
+media: intro.mp4
+media: vocal.mp3
+```
+
+Pour un post texte seul, `application/json` reste accepte:
 
 ```json
 {
@@ -417,6 +485,9 @@ Reponse `201`:
       "username": "alice",
       "profile_photo_url": null
     },
+    "media": [],
+    "likes_count": 0,
+    "liked_by": [],
     "comments": [],
     "created_at": "2026-05-12T10:00:00",
     "updated_at": "2026-05-12T10:00:00"
@@ -426,7 +497,8 @@ Reponse `201`:
 
 Erreurs possibles:
 
-- `400`: `content_required`
+- `400`: `content_or_media_required`
+- `400`: `invalid_media_type`
 - `401`: `missing_bearer_token`
 - `401`: `invalid_token`
 
@@ -448,6 +520,9 @@ Reponse `200`:
       "username": "alice",
       "profile_photo_url": null
     },
+    "media": [],
+    "likes_count": 0,
+    "liked_by": [],
     "comments": [],
     "created_at": "2026-05-12T10:00:00",
     "updated_at": "2026-05-12T10:00:00"
@@ -457,6 +532,62 @@ Reponse `200`:
 
 Erreurs possibles:
 
+- `404`: `post_not_found`
+
+## Liker Un Post
+
+```http
+POST /posts/<post_id>/likes
+Authorization: Bearer <access_token>
+```
+
+Reponse `200`:
+
+```json
+{
+  "post": {
+    "id": 1,
+    "content": "Ma premiere publication",
+    "author": {
+      "id": 1,
+      "username": "alice",
+      "profile_photo_url": null
+    },
+    "media": [],
+    "likes_count": 1,
+    "liked_by": [
+      {
+        "id": 2,
+        "username": "bob",
+        "profile_photo_url": null
+      }
+    ],
+    "comments": [],
+    "created_at": "2026-05-12T10:00:00",
+    "updated_at": "2026-05-12T10:00:00"
+  }
+}
+```
+
+Erreurs possibles:
+
+- `401`: `missing_bearer_token`
+- `401`: `invalid_token`
+- `404`: `post_not_found`
+
+## Retirer Son Like D'un Post
+
+```http
+DELETE /posts/<post_id>/likes
+Authorization: Bearer <access_token>
+```
+
+Reponse `200`: meme format que `POST /posts/<post_id>/likes`.
+
+Erreurs possibles:
+
+- `401`: `missing_bearer_token`
+- `401`: `invalid_token`
 - `404`: `post_not_found`
 
 ## Commenter Un Post
@@ -475,6 +606,15 @@ Body:
 }
 ```
 
+Pour repondre a un commentaire, ajouter `parent_id`:
+
+```json
+{
+  "content": "Ma reponse",
+  "parent_id": 1
+}
+```
+
 Reponse `201`:
 
 ```json
@@ -482,8 +622,16 @@ Reponse `201`:
   "comment": {
     "id": 1,
     "content": "Mon commentaire",
-    "author_id": 1,
+    "author": {
+      "id": 1,
+      "username": "alice",
+      "profile_photo_url": null
+    },
     "post_id": 1,
+    "parent_id": null,
+    "likes_count": 0,
+    "liked_by": [],
+    "replies": [],
     "created_at": "2026-05-12T10:00:00",
     "updated_at": "2026-05-12T10:00:00"
   }
@@ -493,9 +641,53 @@ Reponse `201`:
 Erreurs possibles:
 
 - `400`: `content_required`
+- `400`: `invalid_parent_id`
 - `401`: `missing_bearer_token`
 - `401`: `invalid_token`
 - `404`: `post_not_found`
+- `404`: `comment_not_found`
+
+## Liker Un Commentaire
+
+```http
+POST /comments/<comment_id>/likes
+Authorization: Bearer <access_token>
+```
+
+Reponse `200`:
+
+```json
+{
+  "message": "comment_liked"
+}
+```
+
+Erreurs possibles:
+
+- `401`: `missing_bearer_token`
+- `401`: `invalid_token`
+- `404`: `comment_not_found`
+
+## Retirer Son Like D'un Commentaire
+
+```http
+DELETE /comments/<comment_id>/likes
+Authorization: Bearer <access_token>
+```
+
+Reponse `200`:
+
+```json
+{
+  "message": "comment_unliked"
+}
+```
+
+Erreurs possibles:
+
+- `401`: `missing_bearer_token`
+- `401`: `invalid_token`
+- `404`: `comment_not_found`
 
 ## Afficher Une Image Uploadee
 

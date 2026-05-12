@@ -28,8 +28,10 @@ class Config:
     SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "CEKA")
     SMTP_TIMEOUT_SECONDS = int(os.getenv("SMTP_TIMEOUT_SECONDS", "10"))
     UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", str(BASE_DIR / "uploads"))
-    MAX_CONTENT_LENGTH = 8 * 1024 * 1024
+    MAX_CONTENT_LENGTH = 100 * 1024 * 1024
     ALLOWED_IMAGE_EXTENSIONS = {"jpg", "jpeg", "png", "webp"}
+    ALLOWED_VIDEO_EXTENSIONS = {"mp4", "mov", "webm", "mkv"}
+    ALLOWED_AUDIO_EXTENSIONS = {"mp3", "wav", "ogg", "m4a", "aac"}
     UPLOAD_DIRECTORIES = {
         "profile_photos": "profile-photos",
         "banners": "banners",

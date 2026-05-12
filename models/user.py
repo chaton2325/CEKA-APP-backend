@@ -27,6 +27,12 @@ class User(Base):
     comments = relationship(
         "Comment", back_populates="author", cascade="all, delete-orphan"
     )
+    post_likes = relationship(
+        "PostLike", back_populates="user", cascade="all, delete-orphan"
+    )
+    comment_likes = relationship(
+        "CommentLike", back_populates="user", cascade="all, delete-orphan"
+    )
 
     def to_dict(self) -> dict:
         return {

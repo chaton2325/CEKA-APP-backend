@@ -120,8 +120,24 @@ Authorization: Bearer <access_token>
 ```http
 POST /posts
 Authorization: Bearer <access_token>
-Content-Type: application/json
+Content-Type: multipart/form-data
+```
 
+Champs:
+
+- `content`: texte optionnel si au moins un media est envoye
+- `media`: fichiers image/audio/video, champ repetable pour envoyer plusieurs fichiers
+
+Formats image acceptes: `jpg`, `jpeg`, `png`, `webp`.
+Formats video acceptes: `mp4`, `mov`, `webm`, `mkv`.
+Formats audio acceptes: `mp3`, `wav`, `ogg`, `m4a`, `aac`.
+
+Il est possible d'envoyer plusieurs images, videos, audios, ou un melange
+image/audio/video dans la meme publication.
+
+Pour une publication texte simple, `application/json` reste accepte:
+
+```json
 {
   "content": "Ma premiere publication"
 }
@@ -131,6 +147,21 @@ Content-Type: application/json
 
 ```http
 GET /posts
+```
+
+Chaque post renvoie:
+
+- `media`: liste des audios/videos attaches
+- `likes_count`: nombre de likes
+- `liked_by`: utilisateurs ayant like
+- `comments`: commentaires racine avec auteur, likes et reponses
+
+### Liker / unliker une publication
+
+```http
+POST /posts/<post_id>/likes
+DELETE /posts/<post_id>/likes
+Authorization: Bearer <access_token>
 ```
 
 ### Commenter
@@ -143,4 +174,21 @@ Content-Type: application/json
 {
   "content": "Mon commentaire"
 }
+```
+
+Pour repondre a un commentaire, envoyer `parent_id`:
+
+```json
+{
+  "content": "Ma reponse",
+  "parent_id": 1
+}
+```
+
+### Liker / unliker un commentaire
+
+```http
+POST /comments/<comment_id>/likes
+DELETE /comments/<comment_id>/likes
+Authorization: Bearer <access_token>
 ```

@@ -23,3 +23,10 @@ class Post(Base):
     comments = relationship(
         "Comment", back_populates="post", cascade="all, delete-orphan"
     )
+    media = relationship(
+        "PostMedia",
+        back_populates="post",
+        cascade="all, delete-orphan",
+        order_by="PostMedia.position",
+    )
+    likes = relationship("PostLike", back_populates="post", cascade="all, delete-orphan")

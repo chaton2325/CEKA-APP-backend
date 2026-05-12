@@ -2,6 +2,7 @@ from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
 
 from config import Config
+from database.schema_upgrades import apply_schema_upgrades
 from database.session import engine
 from models import Base, load_models
 
@@ -15,6 +16,10 @@ def main() -> int:
 
         with engine.begin() as connection:
             Base.metadata.create_all(bind=connection)
+
+        apply_schema_upgrades(engine)
+
+        with engine.connect() as connection:
             tables = inspect(connection).get_table_names()
 
         print("Database connection: OK")

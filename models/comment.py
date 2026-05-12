@@ -13,6 +13,9 @@ class Comment(Base):
     content: Mapped[str] = mapped_column(Text, nullable=False)
     author_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     post_id: Mapped[int] = mapped_column(ForeignKey("posts.id"), nullable=False)
+    parent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("comments.id"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=False
     )
@@ -22,3 +25,10 @@ class Comment(Base):
 
     author = relationship("User", back_populates="comments")
     post = relationship("Post", back_populates="comments")
+    parent = relationship("Comment", remote_side=[id], back_populates="replies")
+    replies = relationship(
+        "Comment", back_populates="parent", cascade="all, delete-orphan"
+    )
+    likes = relationship(
+        "CommentLike", back_populates="comment", cascade="all, delete-orphan"
+    )
