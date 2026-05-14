@@ -1,4 +1,5 @@
 from flask import Flask
+from flask_cors import CORS
 
 from config import Config
 from controllers.auth_controller import auth_bp
@@ -11,18 +12,8 @@ from services.file_service import ensure_upload_directories
 
 def create_app() -> Flask:
     app = Flask(__name__)
+    CORS(app, resources={r"/*": {"origins": "*"}})
     app.config.from_object(Config)
-
-    @app.after_request
-    def add_cors_headers(response):
-        response.headers["Access-Control-Allow-Origin"] = "*"
-        response.headers["Access-Control-Allow-Methods"] = (
-            "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-        )
-        response.headers["Access-Control-Allow-Headers"] = (
-            "Content-Type, Authorization"
-        )
-        return response
 
     init_database()
     ensure_upload_directories()
